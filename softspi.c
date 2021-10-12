@@ -1,93 +1,104 @@
 /**
  * @file    softspi.c
  * @author  Myth
- * @version 0.1
+ * @version 0.2
  * @date    2021.10.12
  * @brief   STM32 SoftSPI Library
  */
 
 #include "softspi.h"
 
-SoftSPI_InitTypeDef config;
+#define SCLK_Set HAL_GPIO_WritePin(SoftSPIx->SCLK_GPIO, SoftSPIx->SCLK_Pin, GPIO_PIN_SET)
+#define SCLK_Clr HAL_GPIO_WritePin(SoftSPIx->SCLK_GPIO, SoftSPIx->SCLK_Pin, GPIO_PIN_RESET)
 
-uint8_t GPIOx_Pin_Init(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode, uint32_t Pull);
+#define MOSI_Set HAL_GPIO_WritePin(SoftSPIx->MOSI_GPIO, SoftSPIx->MOSI_Pin, GPIO_PIN_SET)
+#define MOSI_Clr HAL_GPIO_WritePin(SoftSPIx->MOSI_GPIO, SoftSPIx->MOSI_Pin, GPIO_PIN_RESET)
 
-HAL_StatusTypeDef SoftSPI_Init(SoftSPI_InitTypeDef *SoftSPI_Initure)
+#define MISO_Read HAL_GPIO_ReadPin(SoftSPIx->MISO_GPIO, SoftSPIx->MISO_Pin)
+
+#define SS_Set HAL_GPIO_WritePin(SoftSPIx->SS_GPIO, SoftSPIx->SS_Pin, GPIO_PIN_SET)
+#define SS_Clr HAL_GPIO_WritePin(SoftSPIx->SS_GPIO, SoftSPIx->SS_Pin, GPIO_PIN_RESET)
+
+#define Delay SoftSPI_Delay_us(SoftSPIx->Delay_Time)
+
+uint8_t SoftSPI_GPIOx_Pin_Init(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode, uint32_t Pull);
+
+HAL_StatusTypeDef SoftSPI_Init(SoftSPI_TypeDef *SoftSPIx)
 {
-    config.SCLK_GPIO = SoftSPI_Initure->SCLK_GPIO;
-    config.SCLK_Pin = SoftSPI_Initure->SCLK_Pin;
+    SoftSPIx->SCLK_GPIO = SoftSPIx->SCLK_GPIO;
+    SoftSPIx->SCLK_Pin = SoftSPIx->SCLK_Pin;
 
-    if (!GPIOx_Pin_Init(config.SCLK_GPIO, config.SCLK_Pin, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL))
+    if (!SoftSPI_GPIOx_Pin_Init(SoftSPIx->SCLK_GPIO, SoftSPIx->SCLK_Pin, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL))
         return HAL_ERROR;
 
-    config.MOSI_GPIO = SoftSPI_Initure->MOSI_GPIO;
-    config.MOSI_Pin = SoftSPI_Initure->MOSI_Pin;
+    SoftSPIx->MOSI_GPIO = SoftSPIx->MOSI_GPIO;
+    SoftSPIx->MOSI_Pin = SoftSPIx->MOSI_Pin;
 
-    if (!GPIOx_Pin_Init(config.MOSI_GPIO, config.MOSI_Pin, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL))
+    if (!SoftSPI_GPIOx_Pin_Init(SoftSPIx->MOSI_GPIO, SoftSPIx->MOSI_Pin, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL))
         return HAL_ERROR;
 
-    config.MISO_GPIO = SoftSPI_Initure->MISO_GPIO;
-    config.MISO_Pin = SoftSPI_Initure->MISO_Pin;
+    SoftSPIx->MISO_GPIO = SoftSPIx->MISO_GPIO;
+    SoftSPIx->MISO_Pin = SoftSPIx->MISO_Pin;
 
-    if (!GPIOx_Pin_Init(config.MISO_GPIO, config.MISO_Pin, GPIO_MODE_INPUT, GPIO_PULLUP))
+    if (!SoftSPI_GPIOx_Pin_Init(SoftSPIx->MISO_GPIO, SoftSPIx->MISO_Pin, GPIO_MODE_INPUT, GPIO_PULLUP))
         return HAL_ERROR;
 
-    config.SS_GPIO = SoftSPI_Initure->SS_GPIO;
-    config.SS_Pin = SoftSPI_Initure->SS_Pin;
+    SoftSPIx->SS_GPIO = SoftSPIx->SS_GPIO;
+    SoftSPIx->SS_Pin = SoftSPIx->SS_Pin;
 
-    if (!GPIOx_Pin_Init(config.SS_GPIO, config.SS_Pin, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL))
+    if (!SoftSPI_GPIOx_Pin_Init(SoftSPIx->SS_GPIO, SoftSPIx->SS_Pin, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL))
         return HAL_ERROR;
 
-    config.Delay_Time = SoftSPI_Initure->Delay_Time;
+    SoftSPIx->Delay_Time = SoftSPIx->Delay_Time;
 
     return HAL_OK;
 }
 
-uint8_t SoftSPI_WriteRead(uint8_t byte)
+uint8_t SoftSPI_WriteRead(SoftSPI_TypeDef *SoftSPIx, uint8_t byte)
 {
     uint8_t data = 0;
     uint8_t i;
 
     // Select Device
-    HAL_GPIO_WritePin(config.SS_GPIO, config.SS_Pin, GPIO_PIN_RESET);
+    SS_Clr;
 
     for (i = 0; i < 8; i++)
     {
-        HAL_GPIO_WritePin(config.SCLK_GPIO, config.SCLK_Pin, GPIO_PIN_RESET);
-        SoftSPI_Delay_us(config.Delay_Time);
+        SCLK_Clr;
+        Delay;
 
         if (byte & 0x80)
-            HAL_GPIO_WritePin(config.MOSI_GPIO, config.MOSI_Pin, GPIO_PIN_SET);
+            MOSI_Set;
         else
-            HAL_GPIO_WritePin(config.MOSI_GPIO, config.MOSI_Pin, GPIO_PIN_RESET);
+            MOSI_Clr;
 
-        SoftSPI_Delay_us(config.Delay_Time);
+        Delay;
 
         byte <<= 1;
-        HAL_GPIO_WritePin(config.SCLK_GPIO, config.SCLK_Pin, GPIO_PIN_SET);
-        SoftSPI_Delay_us(config.Delay_Time);
+        SCLK_Set;
+        Delay;
 
         data <<= 1;
-        if (HAL_GPIO_ReadPin(config.MISO_GPIO, config.MISO_Pin) == GPIO_PIN_SET)
+        if (MISO_Read == GPIO_PIN_SET)
             data |= 0x01;
 
-        SoftSPI_Delay_us(config.Delay_Time);
+        Delay;
     }
 
     // Unselect Device
-    HAL_GPIO_WritePin(config.SS_GPIO, config.SS_Pin, GPIO_PIN_SET);
+    SS_Set;
 
     return data;
 }
 
-void SoftSPI_WriteReadBuff(uint8_t *pWrite, uint8_t *pRead, uint32_t len)
+void SoftSPI_WriteReadBuff(SoftSPI_TypeDef *SoftSPIx, uint8_t *pWrite, uint8_t *pRead, uint32_t len)
 {
     uint8_t data;
     uint8_t byte;
     uint8_t i, j;
 
     // Select Device
-    HAL_GPIO_WritePin(config.SS_GPIO, config.SS_Pin, GPIO_PIN_RESET);
+    SS_Clr;
 
     for (j = 0; j < len; j++)
     {
@@ -96,35 +107,35 @@ void SoftSPI_WriteReadBuff(uint8_t *pWrite, uint8_t *pRead, uint32_t len)
 
         for (i = 0; i < 8; i++)
         {
-            HAL_GPIO_WritePin(config.SCLK_GPIO, config.SCLK_Pin, GPIO_PIN_RESET);
-            SoftSPI_Delay_us(config.Delay_Time);
+            SCLK_Clr;
+            Delay;
 
             if (byte & 0x80)
-                HAL_GPIO_WritePin(config.MOSI_GPIO, config.MOSI_Pin, GPIO_PIN_SET);
+                MOSI_Set;
             else
-                HAL_GPIO_WritePin(config.MOSI_GPIO, config.MOSI_Pin, GPIO_PIN_RESET);
+                MOSI_Clr;
 
-            SoftSPI_Delay_us(config.Delay_Time);
+            Delay;
 
             byte <<= 1;
-            HAL_GPIO_WritePin(config.SCLK_GPIO, config.SCLK_Pin, GPIO_PIN_SET);
-            SoftSPI_Delay_us(config.Delay_Time);
+            SCLK_Set;
+            Delay;
 
             data <<= 1;
-            if (HAL_GPIO_ReadPin(config.MISO_GPIO, config.MISO_Pin) == GPIO_PIN_SET)
+            if (MISO_Read == GPIO_PIN_SET)
                 data |= 0x01;
 
-            SoftSPI_Delay_us(config.Delay_Time);
+            Delay;
         }
 
         pRead[j] = data;
     }
 
     // Unselect Device
-    HAL_GPIO_WritePin(config.SS_GPIO, config.SS_Pin, GPIO_PIN_SET);
+    SS_Set;
 }
 
-uint8_t GPIOx_Pin_Init(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode, uint32_t Pull)
+uint8_t SoftSPI_GPIOx_Pin_Init(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode, uint32_t Pull)
 {
     switch ((uint32_t)(GPIOx))
     {

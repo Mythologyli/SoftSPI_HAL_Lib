@@ -1,7 +1,7 @@
 /**
  * @file    softspi_conf.h
  * @author  Myth
- * @version 0.1
+ * @version 0.2
  * @date    2021.10.12
  * @brief   STM32 SoftSPI Library Config File
  */

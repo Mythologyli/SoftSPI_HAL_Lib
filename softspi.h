@@ -1,7 +1,7 @@
 /**
  * @file    softspi.h
  * @author  Myth
- * @version 0.1
+ * @version 0.2
  * @date    2021.10.12
  * @brief   STM32 SoftSPI Library
  */
@@ -12,7 +12,7 @@
 #include "softspi_conf.h"
 
 /**
-  * @brief  SoftSPI Configuration Structure definition
+  * @brief  SoftSPI Structure definition
   */
 typedef struct
 {
@@ -29,12 +29,12 @@ typedef struct
     uint32_t SS_Pin;
 
     uint32_t Delay_Time;
-} SoftSPI_InitTypeDef;
+} SoftSPI_TypeDef;
 
-HAL_StatusTypeDef SoftSPI_Init(SoftSPI_InitTypeDef *SoftSPI_Initure);
+HAL_StatusTypeDef SoftSPI_Init(SoftSPI_TypeDef *SoftSPIx);
 
-uint8_t SoftSPI_WriteRead(uint8_t byte);
+uint8_t SoftSPI_WriteRead(SoftSPI_TypeDef *SoftSPIx, uint8_t byte);
 
-void SoftSPI_WriteReadBuff(uint8_t *pWrite, uint8_t *pRead, uint32_t len);
+void SoftSPI_WriteReadBuff(SoftSPI_TypeDef *SoftSPIx, uint8_t *pWrite, uint8_t *pRead, uint32_t len);
 
 #endif
