@@ -12,8 +12,8 @@
 #include "softspi_conf.h"
 
 /**
-  * @brief  SoftSPI Structure definition
-  */
+ * @brief  SoftSPI Structure definition
+ */
 typedef struct
 {
     GPIO_TypeDef *SCLK_GPIO;
@@ -32,6 +32,9 @@ typedef struct
 } SoftSPI_TypeDef;
 
 HAL_StatusTypeDef SoftSPI_Init(SoftSPI_TypeDef *SoftSPIx);
+
+void SoftSPI_SetSS(SoftSPI_TypeDef *SoftSPIx);
+void SoftSPI_ClrSS(SoftSPI_TypeDef *SoftSPIx);
 
 uint8_t SoftSPI_WriteRead(SoftSPI_TypeDef *SoftSPIx, uint8_t byte);
 

@@ -54,13 +54,20 @@ HAL_StatusTypeDef SoftSPI_Init(SoftSPI_TypeDef *SoftSPIx)
     return HAL_OK;
 }
 
+void SoftSPI_SetSS(SoftSPI_TypeDef *SoftSPIx)
+{
+    SS_Set;
+}
+
+void SoftSPI_ClrSS(SoftSPI_TypeDef *SoftSPIx)
+{
+    SS_Clr;
+}
+
 uint8_t SoftSPI_WriteRead(SoftSPI_TypeDef *SoftSPIx, uint8_t byte)
 {
     uint8_t data = 0;
     uint8_t i;
-
-    // Select Device
-    SS_Clr;
 
     for (i = 0; i < 8; i++)
     {
@@ -85,9 +92,6 @@ uint8_t SoftSPI_WriteRead(SoftSPI_TypeDef *SoftSPIx, uint8_t byte)
         Delay;
     }
 
-    // Unselect Device
-    SS_Set;
-
     return data;
 }
 
@@ -96,9 +100,6 @@ void SoftSPI_WriteReadBuff(SoftSPI_TypeDef *SoftSPIx, uint8_t *pWrite, uint8_t *
     uint8_t data;
     uint8_t byte;
     uint8_t i, j;
-
-    // Select Device
-    SS_Clr;
 
     for (j = 0; j < len; j++)
     {
@@ -131,8 +132,6 @@ void SoftSPI_WriteReadBuff(SoftSPI_TypeDef *SoftSPIx, uint8_t *pWrite, uint8_t *
         pRead[j] = data;
     }
 
-    // Unselect Device
-    SS_Set;
 }
 
 uint8_t SoftSPI_GPIOx_Pin_Init(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode, uint32_t Pull)
